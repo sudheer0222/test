@@ -2,25 +2,20 @@ FROM openjdk:8-jdk
 
 RUN apt-get update -y && apt-get install -y curl sudo
 
-ENV KUBECTL_VERSION="v1.18.0"
+# Kubectl for AWS EKS
+ADD https://amazon-eks.s3.us-west-2.amazonaws.com/1.15.10/2020-02-22/bin/linux/amd64/kubectl /usr/local/bin/kubectl
+RUN chmod +x /usr/local/bin/kubectl
 
-RUN apt-get add --update ca-certificates bash gnupg jq py-pip \
-  && apt-get add --update -t deps curl gettext \
-  && pip install awscli \
-  && apt-get --purge -v del py-pip \
-  && rm -rf /var/cache/apk/* 
+# AWS IAM Authenticator.
+ADD https://amazon-eks.s3-us-west-2.amazonaws.com/1.11.9/2019-03-27/bin/linux/amd64/aws-iam-authenticator /usr/local/bin/aws-iam-authenticator
+RUN chmod +x /usr/local/bin/aws-iam-authenticator
 
-RUN curl -L https://storage.googleapis.com/kubernetes-release/release/${KUBECTL_VERSION}/bin/linux/amd64/kubectl -o /usr/local/bin/kubectl \
-  & curl -L https://github.com/kubernetes-sigs/aws-iam-authenticator/releases/download/v0.3.0/heptio-authenticator-aws_0.3.0_linux_amd64 -o /usr/local/bin/aws-iam-authenticator \
-  & wait \
-  && chmod +x /usr/local/bin/kubectl \
-  && chmod +x /usr/local/bin/aws-iam-authenticator
-  
-RUN mkdir -p kube
-ADD . .
-RUN chmod +x entrypoint.sh
-ENV KUBECONFIG=/kube/config
+# Python 2.7 with pip
+RUN apt-get update && apt-get install -y \
+        python-pip
 
+# AWS CLI
+RUN pip install awscli
 
 ARG user=jenkins
 ARG group=jenkins
